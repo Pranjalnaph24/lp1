@@ -1,0 +1,40 @@
+sudo apt update && sudo apt upgrade
+cd ~/Desktop
+mkdir dht_test
+cd ~/Desktop/dht_test
+python3 -m venv myenv
+ls –l
+source myenv/bin/activate
+python3 -m pip install adafruit-circuitpython-dht
+
+import time
+import board
+import adafruit_dht
+
+# Sensor data pin is connected to GPIO 4
+sensor = adafruit_dht.DHT22(board.D4)
+# Uncomment for DHT11
+#sensor = adafruit_dht.DHT11(board.D4)
+
+while True:
+    try:
+        # Print the values to the serial port
+        temperature_c = sensor.temperature
+        temperature_f = temperature_c * (9 / 5) + 32
+        humidity = sensor.humidity
+        print("Temp={0:0.1f}ºC, Temp={1:0.1f}ºF, Humidity={2:0.1f}%".format(temperature_c, temperature_f, humidity))
+
+    except RuntimeError as error:
+        # Errors happen fairly often, DHT's are hard to read, just keep going
+        print(error.args[0])
+        time.sleep(2.0)
+        continue
+    except Exception as error:
+        sensor.exit()
+        raise error
+
+    time.sleep(3.0)
+
+GO to the desktop and open dht_test file 
+Then save this program their temp.py
+Go to same terminal and run the program temp.py

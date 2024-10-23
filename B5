@@ -1,0 +1,226 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+
+using namespace std;
+
+class Process {
+public:
+    int pid; // Process ID
+    int burst_time; // Burst Time
+    int remaining_time; // Remaining Time
+    int arrival_time; // Arrival Time
+    int priority; // Priority
+    int completion_time; // Completion Time
+    int turnaround_time; // Turnaround Time
+    int waiting_time; // Waiting Time
+
+    Process(int id, int bt, int at, int p) 
+        : pid(id), burst_time(bt), remaining_time(bt), 
+          arrival_time(at), priority(p), completion_time(0),
+          turnaround_time(0), waiting_time(0) {}
+};
+
+// FCFS Scheduling
+void fcfs(vector<Process>& processes) {
+    int time = 0;
+    for (auto& process : processes) {
+        if (time < process.arrival_time) {
+            time = process.arrival_time;
+        }
+        time += process.burst_time;
+        process.completion_time = time;
+        process.turnaround_time = process.completion_time - process.arrival_time;
+        process.waiting_time = process.turnaround_time - process.burst_time;
+    }
+}
+
+// SJF Preemptive Scheduling
+void sjf_preemptive(vector<Process>& processes) {
+    int time = 0;
+    int completed = 0;
+    int n = processes.size();
+
+    while (completed < n) {
+        vector<Process*> available_processes;
+        for (auto& process : processes) {
+            if (process.arrival_time <= time && process.remaining_time > 0) {
+                available_processes.push_back(&process);
+            }
+        }
+
+        if (!available_processes.empty()) {
+            Process* current_process = *min_element(available_processes.begin(), available_processes.end(),
+                [](Process* a, Process* b) {
+                    return a->remaining_time < b->remaining_time;
+                });
+            current_process->remaining_time--;
+            time++;
+
+            if (current_process->remaining_time == 0) {
+                current_process->completion_time = time;
+                current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
+                current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
+                completed++;
+            }
+        } else {
+            time++; // Idle time
+        }
+    }
+}
+
+// Priority Non-Preemptive Scheduling
+void priority_non_preemptive(vector<Process>& processes) {
+    int time = 0;
+    int completed = 0;
+    int n = processes.size();
+
+    while (completed < n) {
+        vector<Process*> available_processes;
+        for (auto& process : processes) {
+            if (process.arrival_time <= time && process.burst_time > 0) {
+                available_processes.push_back(&process);
+            }
+        }
+
+        if (!available_processes.empty()) {
+            Process* current_process = *min_element(available_processes.begin(), available_processes.end(),
+                [](Process* a, Process* b) {
+                    return a->priority < b->priority;
+                });
+            time += current_process->burst_time;
+            current_process->completion_time = time;
+            current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
+            current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
+            current_process->burst_time = 0; // Mark as completed
+            completed++;
+        } else {
+            time++; // Idle time
+        }
+    }
+}
+
+// Round Robin Scheduling
+void round_robin(vector<Process>& processes, int quantum) {
+    int time = 0;
+    int completed = 0;
+    vector<Process*> queue;
+
+    for (auto& process : processes) {
+        if (process.arrival_time <= time) {
+            queue.push_back(&process);
+        }
+    }
+
+    while (completed < processes.size()) {
+        if (!queue.empty()) {
+            Process* current_process = queue.front();
+            queue.erase(queue.begin());
+
+            if (current_process->remaining_time > quantum) {
+                time += quantum;
+                current_process->remaining_time -= quantum;
+                queue.push_back(current_process); // Re-queue
+            } else {
+                time += current_process->remaining_time;
+                current_process->completion_time = time;
+                current_process->turnaround_time = current_process->completion_time - current_process->arrival_time;
+                current_process->waiting_time = current_process->turnaround_time - current_process->burst_time;
+                current_process->remaining_time = 0; // Mark as completed
+                completed++;
+            }
+
+            // Add newly arriving processes to the queue
+            for (auto& process : processes) {
+                if (process.remaining_time > 0 && process.arrival_time <= time && 
+                    find(queue.begin(), queue.end(), &process) == queue.end()) {
+                    queue.push_back(&process);
+                }
+            }
+        } else {
+            time++; // Idle time
+        }
+    }
+}
+
+// Function to print process info
+void print_process_info(const vector<Process>& processes) {
+    cout << left << setw(5) << "PID" 
+         << setw(10) << "BT" 
+         << setw(10) << "AT" 
+         << setw(10) << "Priority" 
+         << setw(10) << "CT" 
+         << setw(10) << "TAT" 
+         << setw(10) << "WT" << endl;
+
+    cout << setfill('-') << setw(65) << "-" << setfill(' ') << endl; // Divider line
+
+    for (const auto& p : processes) {
+        cout << left << setw(5) << p.pid 
+             << setw(10) << p.burst_time 
+             << setw(10) << p.arrival_time 
+             << setw(10) << p.priority 
+             << setw(10) << p.completion_time 
+             << setw(10) << p.turnaround_time 
+             << setw(10) << p.waiting_time << endl;
+    }
+    
+    cout << setfill('-') << setw(65) << "-" << setfill(' ') << endl; // Divider line
+}
+
+int main() {
+    vector<Process> processes = {
+        Process(1, 10, 0, 2), // PID, Burst Time, Arrival Time, Priority
+        Process(2, 5, 2, 1),
+        Process(3, 8, 1, 3),
+        Process(4, 6, 3, 2)
+    };
+
+    // FCFS
+    cout << "FCFS Scheduling:" << endl;
+    fcfs(processes);
+    print_process_info(processes);
+
+    // Resetting process data for other algorithms
+    processes = {
+        Process(1, 10, 0, 2),
+        Process(2, 5, 2, 1),
+        Process(3, 8, 1, 3),
+        Process(4, 6, 3, 2)
+    };
+
+    // SJF Preemptive
+    cout << "\nSJF Preemptive Scheduling:" << endl;
+    sjf_preemptive(processes);
+    print_process_info(processes);
+
+    // Resetting process data for other algorithms
+    processes = {
+        Process(1, 10, 0, 2),
+        Process(2, 5, 2, 1),
+        Process(3, 8, 1, 3),
+        Process(4, 6, 3, 2)
+    };
+
+    // Priority Non-Preemptive
+    cout << "\nPriority Non-Preemptive Scheduling:" << endl;
+    priority_non_preemptive(processes);
+    print_process_info(processes);
+
+    // Resetting process data for other algorithms
+    processes = {
+        Process(1, 10, 0, 2),
+        Process(2, 5, 2, 1),
+        Process(3, 8, 1, 3),
+        Process(4, 6, 3, 2)
+    };
+
+    // Round Robin with a quantum of 4
+    cout << "\nRound Robin Scheduling (Quantum = 4):" << endl;
+    round_robin(processes, 4);
+    print_process_info(processes);
+
+    return 0;
+}
+

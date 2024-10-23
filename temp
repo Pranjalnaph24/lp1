@@ -1,3 +1,9 @@
+VCC pin of the DHT11 to 3.3V or 5V on the Raspberry Pi.
+GND pin of the DHT11 to Ground on the Raspberry Pi.
+DATA pin of the DHT11 to a GPIO pin (e.g., GPIO 4).
+Optional: If your DHT11 has a fourth pin, it's usually NC (Not Connected).
+
+
 sudo apt update && sudo apt upgrade
 cd ~/Desktop
 mkdir dht_test

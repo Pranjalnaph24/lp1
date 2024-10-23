@@ -1,0 +1,38 @@
+•  Wiring the Water Sensor:
+•	VCC pin of the water sensor to 5V on the Raspberry Pi.
+•	GND pin of the water sensor to Ground on the Raspberry Pi.
+•	OUT pin of the water sensor to a GPIO pin (e.g., GPIO 22).
+•  Wiring the LED:
+•	Anode (long leg) of the LED to a resistor (220 ohms) and then to another GPIO pin (e.g., GPIO 27).
+•	Cathode (short leg) of the LED to Ground on the Raspberry Pi.
+import RPi.GPIO as GPIO
+import time
+
+# Pin Definitions
+water_sensor_pin = 22  # GPIO pin for the water sensor
+led_pin = 27           # GPIO pin for the LED
+
+# GPIO setup
+GPIO.setmode(GPIO.BCM)  # Use BCM pin numbering
+GPIO.setup(water_sensor_pin, GPIO.IN)  # Water sensor as input
+GPIO.setup(led_pin, GPIO.OUT)  # LED as output
+
+try:
+    while True:
+        # Check if the water sensor detects water
+        if GPIO.input(water_sensor_pin):
+            print("Water detected")
+            GPIO.output(led_pin, GPIO.HIGH)  # Turn on the LED
+        else:
+            print("No water detected")
+            GPIO.output(led_pin, GPIO.LOW)   # Turn off the LED
+        
+        # Delay to avoid excessive logging
+        time.sleep(0.5)
+
+except KeyboardInterrupt:
+    print("Program stopped by user")
+
+finally:
+    # Clean up GPIO settings
+    GPIO.cleanup()

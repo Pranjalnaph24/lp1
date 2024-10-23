@@ -1,0 +1,118 @@
+Input:
+
+class Assembler:
+    def _init_(self):
+        self.symbol_table = {}
+        self.intermediate_code = []
+        self.opcode_table = {
+            "ADD": "01",
+            "SUB": "02",
+            "MUL": "03",
+            "DIV": "04",
+            "LOAD": "05",
+            "STORE": "06",
+            "START": "00",
+            "END": "FF"
+        }
+        self.literals = []
+        self.pool_table = []
+        self.current_address = 0
+        self.literal_index = 0
+
+    def pass_one(self, source_code):
+        for line in source_code:
+            parts = line.strip().split()
+            if not parts:
+                continue
+            
+            if parts[0] == "START":
+                self.current_address = int(parts[1]) if len(parts) > 1 else self.current_address
+                continue
+            
+            if parts[0] == "END":
+                self.intermediate_code.append((self.current_address, "END"))
+                break
+            
+            # Check for labels and add to symbol table
+            if parts[0].endswith(":"):
+                label = parts[0][:-1]
+                self.symbol_table[label] = self.current_address
+                parts = parts[1:]  # Remove the label
+
+            if parts:
+                opcode = parts[0]
+                if opcode in self.opcode_table:
+                    self.intermediate_code.append((self.current_address, opcode))
+                    self.current_address += 1  # Increment address for each instruction
+            
+            # Handle literals
+            for part in parts:
+                if part.startswith('='):
+                    literal = part[1:]  # Remove '='
+                    if literal not in self.literals:
+                        self.literals.append(literal)
+                        self.pool_table.append(self.literal_index)  # Add index of first literal
+                        self.literal_index += 1
+
+    def pass_two(self):
+        machine_code = []
+        for code in self.intermediate_code:
+            address = code[0]
+            instruction = code[1]
+            if instruction in self.opcode_table:
+                machine_code.append((address, self.opcode_table[instruction]))
+            elif instruction == "END":
+                machine_code.append((address, "FF"))  # End opcode
+        
+        # Handle literals based on pool table
+        for index in self.pool_table:
+            if index < len(self.literals):
+                literal = self.literals[index]
+                address = self.current_address
+                machine_code.append((address, literal))
+                self.current_address += 1
+
+        return machine_code
+
+    def display_tables(self):
+        print("Symbol Table:")
+        for label, address in self.symbol_table.items():
+            print(f"{label}: {address}")
+        
+        print("\nLiteral Table:")
+        for i, literal in enumerate(self.literals):
+            print(f"Literal {i + 1}: {literal}")
+
+        print("\nPool Table:")
+        for i, index in enumerate(self.pool_table):
+            print(f"Pool {i + 1}: Index {index}")
+        
+        print("\nIntermediate Code:")
+        for code in self.intermediate_code:
+            print(code)
+
+# Read from the .asm file
+def main():
+    assembler = Assembler()
+    with open('sample.asm', 'r') as file:
+        source_code = file.readlines()
+    
+    assembler.pass_one(source_code)
+    assembler.display_tables()
+    machine_code = assembler.pass_two()
+
+    print("\nMachine Code:")
+    for address, code in machine_code:
+        print(f"{address}: {code}")
+
+if _name_ == "_main_":
+    main()
+
+Input Assembly language file:
+
+START 200
+LOAD A
+ADD B
+STORE RESULT
+END
+
